@@ -9,7 +9,7 @@ class Value(object):
         if self.store_history:
             self._history = []
 
-    def set_value(self, value: float):
+    def update(self, value: float):
         self._value = value
         if self.store_history:
             self._history.append(self._value)
@@ -44,3 +44,19 @@ class Error(Value):
 class Data(Value):
     def __init__(self, init_value: float = None, store_history: bool = True) -> None:
         super().__init__(init_value=init_value, store_history=store_history)
+
+
+class Function(object):
+    def forward(self, value: Value) -> float:
+        raise NotImplementedError
+
+    def backward(self, value: Value) -> float:
+        raise NotImplementedError
+
+
+class LinearFunction(Function):
+    def forward(self, value: Value) -> float:
+        return value.value
+
+    def backward(self, value: Value) -> float:
+        return 1.0
