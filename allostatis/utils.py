@@ -1,9 +1,10 @@
 from typing import List
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 
-from allostatis.types import Value
+from allostatis.types import Variable
 
-def plot_values(values: List[Value], names: List[str]):
+
+def plot_values(values: List[Variable], names: List[str]):
     num_plots = len(values)
     fig_width = max(12, num_plots * 3)
     _, axes = plt.subplots(1, num_plots, figsize=(fig_width, 3))

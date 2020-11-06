@@ -5,7 +5,7 @@ from allostatis.utils import plot_values
 if __name__ == "__main__":
     num_iterations = 1000
     data_value = 4.0
-    prior_value = 10.0
+    prior_value = 20.0
 
     mu = Node()
     prior = Node(init_value=prior_value)
@@ -13,14 +13,12 @@ if __name__ == "__main__":
 
     function = LinearFunction()
 
-    likelihood_error = Error()
-    prior_error = Error()
+    data_err = Error()
+    prior_err = Error()
 
     for itr in range(num_iterations):
-        likelihood_error = update_error(likelihood_error, mu, data, function=function)
-        prior_error = update_error(prior_error, prior, mu)
-        mu = update_node(
-            mu, likelihood_errors=[likelihood_error], prior_errors=[prior_error], functions=[function]
-        )
+        data_err = update_error(data_err, mu, data, function=function)
+        prior_err = update_error(prior_err, prior, mu)
+        mu = update_node(mu, data_errs=[data_err], functions=[function], prior_errs=[prior_err])
 
-    plot_values([mu, likelihood_error, prior_error], ["Mu", "Likelihood Error", "Prior Error"])
+    plot_values([mu, data_err, prior_err], ["Mu", "Data Error", "Prior Error"])
