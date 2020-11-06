@@ -21,16 +21,14 @@ from allostatis.utils import plot_values
 
 def update_intero_data(
     data: Data,
-    time: int,
     action: Optional[Action] = None,
-    pulse_time: int = 300,
+    stimulus: Optional[float] = None,
     noise_std: float = 0.1,
-    pulse_value: float = 10.0,
     dt: float = 0.01,
 ) -> Data:
     delta = np.random.normal(0.0, noise_std)
-    if time == pulse_time:
-        delta = delta + pulse_value
+    if stimulus is not None:
+        delta = delta + stimulus
     if action is not None:
         delta = delta + action.value
     data.update(data.value + dt * (delta))
@@ -38,8 +36,7 @@ def update_intero_data(
 
 
 def update_proprio_data(data: Data, action: Action, noise_std: float = 0.1) -> Data:
-    value = action.value + np.random.normal(0.0, noise_std)
-    data.update(value)
+    data.update(action.value + np.random.normal(0.0, noise_std))
     return data
 
 
@@ -48,13 +45,16 @@ if __name__ == "__main__":
     reflex_param = 1.0
     delta_time = 0.1
     noise_std = 0.01
+    stim_mag = 30
+    stim_time = 300
 
     prior = Node()
     intero_mu = Node()
     proprio_mu = Node()
 
-    reflex_function = InverseFunction(param=reflex_param)
+    intero_function = IdentityFunction()
     proprio_function = IdentityFunction()
+    reflex_function = InverseFunction(param=reflex_param)
 
     intero_data = Data()
     proprio_data = Data()
@@ -69,8 +69,9 @@ if __name__ == "__main__":
     free_energy = Variable()
 
     for itr in range(num_iterations):
+        stimulus = stim_mag if itr == stim_time else None
         intero_data = update_intero_data(
-            intero_data, itr, action=action, noise_std=noise_std, dt=delta_time
+            intero_data, stimulus=stimulus, action=action, noise_std=noise_std, dt=delta_time
         )
         proprio_data = update_proprio_data(proprio_data, action, noise_std=noise_std)
 
@@ -80,7 +81,11 @@ if __name__ == "__main__":
         reflex_err = update_error(reflex_err, proprio_mu, intero_mu, function=reflex_function)
 
         intero_mu = update_node(
-            intero_mu, data_errs=[intero_err], prior_errs=[prior_err, reflex_err], dt=delta_time
+            intero_mu,
+            data_errs=[intero_err],
+            functions=[intero_function],
+            prior_errs=[prior_err, reflex_err],
+            dt=delta_time,
         )
         proprio_mu = update_node(
             proprio_mu,
@@ -90,7 +95,6 @@ if __name__ == "__main__":
         )
 
         action = update_action(action, proprio_err, dt=delta_time)
-
         free_energy.update(calc_free_energy([intero_err, prior_err, reflex_err]))
 
     plot_values([intero_mu, proprio_mu, free_energy], ["Intero Mu", "Proprio Mu", "Free energy"])

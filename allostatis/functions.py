@@ -35,8 +35,7 @@ def update_error(err: Error, mu: Node, data: Union[Node, Data], function: Functi
 
 
 def update_action(action: Action, err: Error, dt: float = 0.01) -> Action:
-    value = action.value + dt * (-err.value / err.variance)
-    action.update(value)
+    action.update(action.value + dt * (-err.value / err.variance))
     return action
 
 
