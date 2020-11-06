@@ -5,10 +5,17 @@ from allostatis.types import Variable
 
 
 def plot_values(values: List[Variable], names: List[str]):
+    """ Plot a list of values
+
+    Args:
+        values (List[Variable]): [list of values to plot]
+        names (List[str]): [list of value names, used as titles]
+    """
     num_plots = len(values)
-    fig_width = max(12, num_plots * 3)
+    fig_width = min(12, num_plots * 3)
     _, axes = plt.subplots(1, num_plots, figsize=(fig_width, 3))
     for i in range(num_plots):
         axes[i].plot(values[i].history)
         axes[i].set_title(names[i])
+    plt.tight_layout()
     plt.show()
