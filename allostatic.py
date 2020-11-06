@@ -6,7 +6,6 @@ from typing import Optional
 import numpy as np
 
 from allostatis.types import (
-    IdentityFunction,
     Variable,
     Node,
     Error,

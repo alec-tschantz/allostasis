@@ -75,14 +75,25 @@ class Function(object):
 
 
 class IdentityFunction(Function):
-    def __init__(self, param: float = 1.0):
-        super().__init__(param)
+    def __init__(self):
+        super().__init__()
 
     def forward(self, variable: Variable) -> float:
         return variable.value
 
     def backward(self, variable: Variable) -> float:
         return 1.0
+
+
+class LinearFunction(Function):
+    def __init__(self, param: float = 1.0):
+        super().__init__(param)
+
+    def forward(self, variable: Variable) -> float:
+        return self.param * variable.value
+
+    def backward(self, variable: Variable) -> float:
+        return self.param
 
 
 class InverseFunction(Function):

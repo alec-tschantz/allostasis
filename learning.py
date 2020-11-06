@@ -6,7 +6,6 @@ from typing import Optional
 import numpy as np
 
 from allostatis.types import (
-    IdentityFunction,
     Variable,
     Node,
     Error,
@@ -111,7 +110,7 @@ if __name__ == "__main__":
         extero_err = update_error(extero_err, extero_mu, extero_data)
         reflex_err = update_error(reflex_err, proprio_mu, intero_mu, function=reflex_function)
         reflex_extero_err = update_error(
-            reflex_extero_err, extero_mu, proprio_mu, function=reflex_function
+            reflex_extero_err, extero_mu, proprio_mu, function=reflex_extero_function
         )
 
         intero_mu = update_node(
@@ -138,7 +137,6 @@ if __name__ == "__main__":
         reflex_extero_function = update_param(
             reflex_extero_function, extero_mu, reflex_extero_err, lr=learning_rate
         )
-        print(reflex_extero_function.param)
 
         action = update_action(action, proprio_err, dt=delta_time)
         free_energy.update(calc_free_energy([intero_err, prior_err, reflex_err]))
