@@ -15,7 +15,13 @@ from allostatis.types import (
     InverseFunction,
     IdentityFunction,
 )
-from allostatis.functions import update_node, update_error, update_action, calc_free_energy
+from allostatis.functions import (
+    update_node,
+    update_error,
+    update_action,
+    update_param,
+    calc_free_energy,
+)
 from allostatis.utils import plot_values
 
 
@@ -53,12 +59,14 @@ def update_proprio_data(data: Data, action: Action, noise_std: float = 0.1) -> D
 if __name__ == "__main__":
     num_iterations = 1000
     reflex_param = 1.0
+    reflex_extero_param = 0.1
     delta_time = 0.1
+    learning_rate = 0.1
     noise_std = 0.01
-    intero_stim_mag = 30
-    intero_stim_time = 500
-    extero_stim_mag = 30
-    extero_stim_time = 200
+    intero_stim_mag = 10
+    intero_stim_time = 0
+    extero_stim_mag = 0
+    extero_stim_time = 0
 
     prior = Node()
     intero_mu = Node()
@@ -69,7 +77,7 @@ if __name__ == "__main__":
     proprio_function = IdentityFunction()
     extero_function = IdentityFunction()
     reflex_function = InverseFunction(param=reflex_param)
-    reflex_extero_function = InverseFunction(param=reflex_param)
+    reflex_extero_function = InverseFunction(param=reflex_extero_param)
 
     intero_data = Data()
     proprio_data = Data()
@@ -126,6 +134,11 @@ if __name__ == "__main__":
             functions=[reflex_function, extero_function],
             dt=delta_time,
         )
+
+        reflex_extero_function = update_param(
+            reflex_extero_function, extero_mu, reflex_extero_err, lr=learning_rate
+        )
+        print(reflex_extero_function.param)
 
         action = update_action(action, proprio_err, dt=delta_time)
         free_energy.update(calc_free_energy([intero_err, prior_err, reflex_err]))

@@ -8,7 +8,7 @@ def update_node(
     data_errs: List[Error] = None,
     functions: List[Function] = None,
     prior_errs: List[Error] = None,
-    dt: float = 0.01,
+    dt: float = 0.1,
 ) -> Node:
     delta = 0.0
     if data_errs is not None:
@@ -34,9 +34,16 @@ def update_error(err: Error, mu: Node, data: Union[Node, Data], function: Functi
     return err
 
 
-def update_action(action: Action, err: Error, dt: float = 0.01) -> Action:
+def update_action(action: Action, err: Error, dt: float = 0.1) -> Action:
     action.update(action.value + dt * (-err.value / err.variance))
     return action
+
+
+def update_param(function: Function, mu: Node, err: Error, lr: float = 0.1) -> Function:
+    """ TODO make `param` a variable """
+    delta = err.value * function.forward(mu)
+    function.update_param(function.param + lr * (delta))
+    return function
 
 
 def calc_free_energy(errs: List[Error]) -> float:

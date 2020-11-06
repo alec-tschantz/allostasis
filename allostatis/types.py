@@ -42,7 +42,7 @@ class Error(Variable):
         self._variance = variance
 
     @property
-    def variance(self):
+    def variance(self) -> float:
         return self._variance
 
 
@@ -57,14 +57,27 @@ class Action(Variable):
 
 
 class Function(object):
+    def __init__(self, param: float = 1.0):
+        self._param = param
+
     def forward(self, variable: Variable) -> float:
         raise NotImplementedError
 
     def backward(self, variable: Variable) -> float:
         raise NotImplementedError
 
+    def update_param(self, value: float):
+        self._param = value
+
+    @property
+    def param(self) -> float:
+        return self._param
+
 
 class IdentityFunction(Function):
+    def __init__(self, param: float = 1.0):
+        super().__init__(param)
+
     def forward(self, variable: Variable) -> float:
         return variable.value
 
@@ -74,10 +87,10 @@ class IdentityFunction(Function):
 
 class InverseFunction(Function):
     def __init__(self, param: float = 1.0):
-        self._param = 1.0
+        super().__init__(param)
 
     def forward(self, variable: Variable) -> float:
-        return self._param * -variable.value
+        return self.param * -variable.value
 
     def backward(self, variable: Variable) -> float:
-        return -1.0 * self._param
+        return -1.0 * self.param
