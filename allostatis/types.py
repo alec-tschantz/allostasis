@@ -29,6 +29,18 @@ class Variable(object):
 class Node(Variable):
     def __init__(self, init_value: float = 0.0, store_history: bool = True) -> None:
         super().__init__(init_value=init_value, store_history=store_history)
+        self.deltas = []
+
+    def reset(self):
+        self.deltas = []
+
+    def append_delta(self, delta: float):
+        self.deltas.append(delta)
+
+    def apply_update(self):
+        if len(self.deltas) > 0:
+            delta = sum(self.deltas)
+            self.update(self.value + 0.1 * delta)
 
 
 class Error(Variable):
