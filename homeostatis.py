@@ -28,43 +28,16 @@ def update_intero_data(
     pulse_value: float = 10.0,
     dt: float = 0.01,
 ) -> Data:
-    """ Update interoceptive data
-
-    Args:
-        data (Data): [current data]
-        time (int): [global time]
-        action (Action, optional): [action]. Defaults to None.
-        pulse_time (int, optional): [time at which to apply pulse]. Defaults to 3.
-        noise_std (float, optional): [standard deviation of noise]. Defaults to 0.1.
-        pulse_value (float, optional): [magnitude of pulse]. Defaults to 10.0.
-        dt (float, optional): [delta time]. Defaults to 0.01.
-
-    Returns:
-        Data: [updated data]
-    """
     delta = np.random.normal(0.0, noise_std)
-
     if time == pulse_time:
         delta = delta + pulse_value
-
     if action is not None:
         delta = delta + action.value
-
     data.update(data.value + dt * (delta))
     return data
 
 
 def update_proprio_data(data: Data, action: Action, noise_std: float = 0.1) -> Data:
-    """ Update proprioceptive data
-
-    Args:
-        data (Data): [current data]
-        action (Action): [proprioceptive action]
-        noise_std (float, optional): [standard deviation of noise]. Defaults to 0.1.
-
-    Returns:
-        Data: [updated data]
-    """
     value = action.value + np.random.normal(0.0, noise_std)
     data.update(value)
     return data
