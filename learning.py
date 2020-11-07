@@ -1,4 +1,4 @@
-from allostatis.types import LinearFunction, Variable, Node, Data, Param, InverseFunction
+from allostatis.types import Variable, Node, Data, Param, LinearFunction
 from allostatis.model import Model
 from allostatis.utils import plot_values
 
@@ -10,8 +10,6 @@ if __name__ == "__main__":
     param_value = 0.1
     l_rate = 0.01
     delta_time = 0.1
-    stim_delta = 1.0
-    stim_range = range(20, 30)
 
     prior = Node(is_fixed=True, init_value=prior_value)
     mu = Node()

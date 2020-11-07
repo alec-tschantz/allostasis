@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
     intero_data = Data()
     proprio_data = Data()
-
+ 
     reflex_func = InverseFunction()
     action = Action()
     free_energy = Variable()

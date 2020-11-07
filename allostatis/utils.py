@@ -11,5 +11,6 @@ def plot_values(values: List[Variable], names: List[str]):
     for i in range(num_plots):
         axes[i].plot(values[i].history, color="red")
         axes[i].set_title(names[i])
+        [spine.set_linewidth(1.2) for spine in axes[i].spines.values()]
     plt.tight_layout()
     plt.show()
