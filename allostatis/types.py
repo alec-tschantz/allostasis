@@ -1,8 +1,8 @@
-from typing import List
+from typing import Optional, List
 
 
 class Variable(object):
-    def __init__(self, init_value: float = 0.0, store_history: bool = True) -> None:
+    def __init__(self, init_value: float = 0.0, store_history: bool = True):
         self.store_history = store_history
         self._value = init_value
 
@@ -21,34 +21,70 @@ class Variable(object):
     @property
     def history(self) -> List[float]:
         if not self.store_history:
-            raise AttributeError(f"`{self.__class__.__name__}` has `store_history` set to `False`")
+            msg = f"{self.__class__.__name__} has store_history set to False"
+            raise AttributeError(msg)
         else:
             return self._history
 
 
 class Node(Variable):
-    def __init__(self, init_value: float = 0.0, store_history: bool = True) -> None:
+    def __init__(
+        self,
+        is_fixed: bool = False,
+        dt: float = 0.1,
+        init_value: float = 0.0,
+        store_history: bool = True,
+    ):
         super().__init__(init_value=init_value, store_history=store_history)
-        self.deltas = []
+        self._is_fixed = is_fixed
+        self._dt = dt
+        self._deltas: List[float] = []
 
     def reset(self):
-        self.deltas = []
+        self._deltas = []
 
     def append_delta(self, delta: float):
-        self.deltas.append(delta)
+        self._deltas.append(delta)
 
     def apply_update(self):
-        if len(self.deltas) > 0:
-            delta = sum(self.deltas)
-            self.update(self.value + 0.1 * delta)
+        delta = sum(self._deltas)
+        self.update(self.value + self._dt * delta)
+
+    @property
+    def is_fixed(self) -> bool:
+        return self._is_fixed
+
+    @property
+    def dt(self) -> float:
+        return self._dt
+
+    @property
+    def deltas(self) -> List[float]:
+        return self._deltas
+
+
+class Action(Node):
+    def __init__(self, dt: float = 0.1, init_value: float = 0.0, store_history: bool = True):
+        super().__init__(dt=dt, init_value=init_value, store_history=store_history)
+
+
+class Param(Node):
+    def __init__(
+        self,
+        is_fixed: bool = False,
+        l_rate: float = 0.1,
+        init_value: float = 0.0,
+        store_history: bool = True,
+    ):
+        super().__init__(
+            is_fixed=is_fixed, dt=l_rate, init_value=init_value, store_history=store_history
+        )
 
 
 class Error(Variable):
-    def __init__(
-        self, init_value: float = 0.0, variance: float = 1.0, store_history: bool = True
-    ) -> None:
+    def __init__(self, variance: float = 1.0, init_value: float = 0.0, store_history: bool = True):
         super().__init__(init_value=init_value, store_history=store_history)
-        self._variance: float = variance
+        self._variance = variance
 
     def update_variance(self, variance: float):
         self._variance = variance
@@ -59,17 +95,13 @@ class Error(Variable):
 
 
 class Data(Variable):
-    def __init__(self, init_value: float = 0.0, store_history: bool = True) -> None:
-        super().__init__(init_value=init_value, store_history=store_history)
-
-
-class Action(Variable):
-    def __init__(self, init_value: float = 0.0, store_history: bool = True) -> None:
+    def __init__(self, init_value: float = 0.0, store_history: bool = True):
         super().__init__(init_value=init_value, store_history=store_history)
 
 
 class Function(object):
-    def __init__(self, param: float = 1.0):
+    def __init__(self, param: Optional[Param] = None):
+        param = param if param is not None else Param(is_fixed=True, init_value=1.0)
         self._param = param
 
     def forward(self, variable: Variable) -> float:
@@ -79,41 +111,34 @@ class Function(object):
         raise NotImplementedError
 
     def update_param(self, value: float):
-        self._param = value
+        self._param.update(value)
+
+    def __call__(self, variable: Variable) -> float:
+        return self.forward(variable)
 
     @property
-    def param(self) -> float:
+    def param(self) -> Param:
         return self._param
 
 
-class IdentityFunction(Function):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, variable: Variable) -> float:
-        return variable.value
-
-    def backward(self, variable: Variable) -> float:
-        return 1.0
-
-
 class LinearFunction(Function):
-    def __init__(self, param: float = 1.0):
+    def __init__(self, param: Optional[Param] = None):
         super().__init__(param)
 
     def forward(self, variable: Variable) -> float:
-        return self.param * variable.value
+        return self.param.value * variable.value
 
     def backward(self, variable: Variable) -> float:
-        return self.param
+        return self.param.value
 
 
 class InverseFunction(Function):
-    def __init__(self, param: float = 1.0):
+    def __init__(self, param: Optional[Param] = None):
         super().__init__(param)
 
     def forward(self, variable: Variable) -> float:
-        return self.param * -variable.value
+        return self.param.value * -variable.value
 
     def backward(self, variable: Variable) -> float:
-        return -1.0 * self.param
+        return -1.0 * self.param.value
+

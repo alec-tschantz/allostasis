@@ -9,7 +9,7 @@ def plot_values(values: List[Variable], names: List[str]):
     fig_width = min(12, num_plots * 3)
     _, axes = plt.subplots(1, num_plots, figsize=(fig_width, 3))
     for i in range(num_plots):
-        axes[i].plot(values[i].history)
+        axes[i].plot(values[i].history, color="red")
         axes[i].set_title(names[i])
     plt.tight_layout()
     plt.show()

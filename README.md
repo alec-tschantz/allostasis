@@ -4,6 +4,6 @@
 
 ## Notes
 
-- For allostatic model, do we want the exteroceptive prior to be on proprioception or interoception? (currently on proprioception)
-- Make parameters a variable
-- Define connection graph (?)
+- For allostatic model, do we want the exteroceptive prior to be on proprioception or interoception? 
+- Add noise to data variables
+- We are not accounting for prior - reflex arc is just cancelling change in interoceptive state estimation. Remove prior?
