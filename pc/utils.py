@@ -1,7 +1,7 @@
 from typing import List
 import matplotlib.pyplot as plt
 
-from allostatis.types import Variable
+from pc.types import Variable
 
 
 def plot_values(values: List[Variable], names: List[str]):

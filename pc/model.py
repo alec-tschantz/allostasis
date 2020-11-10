@@ -1,7 +1,7 @@
 import uuid
 from typing import Union, Optional, Dict, List
 
-from allostatis.types import Node, Data, Action, Error, Function
+from pc.types import Node, Data, Action, Error, Function
 
 
 class Edge(object):

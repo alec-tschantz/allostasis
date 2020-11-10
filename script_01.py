@@ -1,6 +1,6 @@
-from allostatis.types import Variable, Node, Data, Action, InverseFunction
-from allostatis.model import Model
-from allostatis.utils import plot_values
+from pc.types import Variable, Node, Data, Action, InverseFunction
+from pc.model import Model
+from pc.utils import plot_values
 
 
 if __name__ == "__main__":

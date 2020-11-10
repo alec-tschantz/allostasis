@@ -1,6 +1,6 @@
-from allostatis.types import Variable, Node, Data, Action, InverseFunction
-from allostatis.model import Model
-from allostatis.utils import plot_values
+from pc.types import Variable, Node, Data, Action, InverseFunction
+from pc.model import Model
+from pc.utils import plot_values
 
 
 if __name__ == "__main__":
@@ -12,7 +12,7 @@ if __name__ == "__main__":
     extero_stim_range = range(100, 300)
     intero_stim_range = range(200, 300)
 
-    prior = Node(is_fixed=True, init_value=prior_value)
+    # prior = Node(is_fixed=True, init_value=prior_value)
     intero_mu = Node()
     proprio_mu = Node()
     extero_mu = Node()
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     free_energy = Variable()
 
     model = Model()
-    model.add_connection(prior, intero_mu)
+    # model.add_connection(prior, intero_mu)
     model.add_connection(intero_mu, intero_data)
     model.add_connection(proprio_mu, proprio_data, action=action)
     model.add_connection(extero_mu, extero_data)
