@@ -1,12 +1,22 @@
+from typing import List, Tuple
+
 import numpy as np
 
 
 class MDP(object):
-    def __init__(self, A_extero: np.ndarray, A_intero: np.ndarray, B: np.ndarray, C: np.ndarray):
+    def __init__(
+        self,
+        A_extero: np.ndarray,
+        A_intero: np.ndarray,
+        B: np.ndarray,
+        C: np.ndarray,
+        policies: List[List[int]],
+    ):
         self.A_extero = A_extero
         self.A_intero = A_intero
         self.B = B
         self.C = C
+        self.policies = policies
         self.p0 = np.exp(-16)
 
         self.num_extero_obs = self.A_extero.shape[0]
@@ -35,12 +45,12 @@ class MDP(object):
         self.uQ = np.zeros([self.num_control, 1])
         self.G = np.zeros([self.num_control, 1])
 
-        self.action_range = np.arange(0, self.num_control)
         self.extero_obs = 0.0
         self.intero_obs = 0
         self.action = 0
+        self.global_time = 0
 
-    def reset(self, extero_obs: int, intero_obs: int):
+    def reset(self, extero_obs: int, intero_obs: int, action: int):
         self.extero_obs = extero_obs
         self.intero_obs = intero_obs
         ll_extero = self.log_A_extero[self.extero_obs, :]
@@ -48,7 +58,10 @@ class MDP(object):
         ll_intero = self.log_A_intero[self.intero_obs, :]
         ll_intero = ll_intero[:, np.newaxis]
         self.sQ = self.softmax(ll_extero + ll_intero)
-        self.action = int(np.random.choice(self.action_range))
+        self.action = action
+        self.update_policies()
+        # already taken first step
+        self.global_time = 1
 
     def step(self, extero_obs: int, intero_obs: int) -> int:
         self.extero_obs = extero_obs
@@ -56,7 +69,10 @@ class MDP(object):
         self.infer_sQ()
         self.evaluate_G()
         self.infer_uQ()
-        return self.act()
+        self.action = self.get_action()
+        self.global_time = self.global_time + 1
+        self.update_policies()
+        return self.action
 
     def infer_sQ(self):
         ll_extero = self.log_A_extero[self.extero_obs, :]
@@ -68,30 +84,48 @@ class MDP(object):
         self.sQ = self.softmax(ll_extero + ll_intero + prior)
 
     def evaluate_G(self):
-        self.G = np.zeros([self.num_control, 1])
+        num_policies = len(self.policies)
+        self.G = np.zeros([num_policies, 1])
 
-        for u in range(self.num_control):
-            fs = np.dot(self.B[u], self.sQ)
-            fo_extero = np.dot(self.log_A_extero, fs)
-            fo_extero = self.normdist(fo_extero + self.p0)
+        for i, policy in enumerate(self.policies):
+            fs, utility = self.counterfactual(policy[0], self.sQ)
+            self.G[i] -= utility
+            for t in range(1, len(policy)):
+                fs, utility = self.counterfactual(policy[t], fs)
+                self.G[i] -= utility
 
-            fo_intero = np.dot(self.log_A_intero, fs)
-            fo_intero = self.normdist(fo_intero + self.p0)
+    def counterfactual(self, action: int, state: np.ndarray) -> Tuple[np.ndarray, float]:
+        fs = np.dot(self.B[action], state)
+        fo_extero = np.dot(self.A_extero, fs)
+        fo_extero = self.normdist(fo_extero + self.p0)
 
-            utility = np.sum(fo_intero * np.log(fo_intero / self.C), axis=0)
-            utility = utility[0]
-            # TODO: add surprise
+        fo_intero = np.dot(self.A_intero, fs)
+        fo_intero = self.normdist(fo_intero + self.p0)
+        print(np.round(fo_intero))
 
-            self.G[u] -= utility
+        # TODO: beliefs in intero or extero
+        utility = np.sum(fo_intero * np.log(fo_intero / self.C), axis=0)
+        utility = utility[0]
+
+        return fs, utility
 
     def infer_uQ(self):
         self.uQ = self.softmax(self.G)
 
-    def act(self) -> int:
+    def get_action(self) -> int:
+        # TODO: average over actions
         hu = max(self.uQ)
         options = np.where(self.uQ == hu)[0]
-        self.action = int(np.random.choice(options))
-        return self.action
+        policy = int(np.random.choice(options))
+        action = self.policies[policy][0]
+        return action
+
+    def update_policies(self):
+        policies = []
+        for policy in self.policies:
+            if policy[0] == self.action:
+                policies.append(policy[1:])
+        self.policies = policies
 
     @staticmethod
     def softmax(x: np.ndarray) -> np.ndarray:
