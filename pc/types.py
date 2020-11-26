@@ -1,5 +1,6 @@
 from typing import Optional, List
 
+import numpy as np
 
 class Variable(object):
     def __init__(self, init_value: float = 0.0, store_history: bool = True):
@@ -9,9 +10,9 @@ class Variable(object):
         if self.store_history:
             self._history = []
 
-    def update(self, value: float):
+    def update(self, value: float, stop_history: bool = False):
         self._value = value
-        if self.store_history:
+        if self.store_history and not stop_history:
             self._history.append(self._value)
 
     @property
@@ -38,17 +39,24 @@ class Node(Variable):
         super().__init__(init_value=init_value, store_history=store_history)
         self._is_fixed = is_fixed
         self._dt = dt
+        self._added_history = False
         self._deltas: List[float] = []
 
     def reset(self):
+        self._added_history = False
         self._deltas = []
 
     def append_delta(self, delta: float):
         self._deltas.append(delta)
 
-    def apply_update(self):
+    def apply_update(self, stop_history: bool = False):
         delta = sum(self._deltas)
-        self.update(self.value + self._dt * delta)
+        self.update(self.value + self._dt * delta, stop_history)
+
+    def add_history(self):
+        if not self._added_history:
+            self.update(self.value)
+        self._added_history = True
 
     @property
     def is_fixed(self) -> bool:
@@ -66,7 +74,7 @@ class Node(Variable):
 class Action(Node):
     def __init__(self, dt: float = 0.1, init_value: float = 0.0, store_history: bool = True):
         super().__init__(dt=dt, init_value=init_value, store_history=store_history)
-
+    
 
 class Param(Node):
     def __init__(
@@ -95,8 +103,13 @@ class Error(Variable):
 
 
 class Data(Variable):
-    def __init__(self, init_value: float = 0.0, store_history: bool = True):
+    def __init__(self, init_value: float = 0.0, store_history: bool = True, noise: float = 0.0):
         super().__init__(init_value=init_value, store_history=store_history)
+        self._noise = noise 
+
+    def update(self, value: float, stop_history: bool = False):
+        value = value + np.random.normal(0, self._noise)
+        super().update(value, stop_history)
 
 
 class Function(object):

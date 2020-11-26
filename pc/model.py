@@ -50,13 +50,17 @@ class Edge(object):
             self.func.param.append_delta(delta)
 
     def apply_updates(self):
-        self.from_var.apply_update()
+        self.from_var.apply_update(stop_history=True)
         if not isinstance(self.to_var, Data):
-            self.to_var.apply_update()
+            self.to_var.apply_update(stop_history=True)
         if self.action is not None:
             self.action.apply_update()
         if self.func is not None:
             self.func.param.apply_update()
+
+        self.from_var.add_history()
+        if not isinstance(self.to_var, Data):
+            self.to_var.add_history()
 
 
 class Model(object):
@@ -77,7 +81,7 @@ class Model(object):
         self.edges[uuid] = edge
         return uuid
 
-    def update(self):
+    def update(self, skip_action=False):
         for _, edge in self.edges.items():
             edge.reset()
             edge.update_error()
@@ -85,7 +89,8 @@ class Model(object):
         for _, edge in self.edges.items():
             edge.update_likelihood()
             edge.update_prior()
-            edge.update_action()
+            if not skip_action:
+                edge.update_action()
             edge.update_param()
 
         for _, edge in self.edges.items():
