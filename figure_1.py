@@ -1,9 +1,10 @@
-from pc.types import Variable, Node, Data, Action, InverseFunction
+from pc.types import Variable, Node, Data, Action
 from pc.model import Model
 from pc.utils import plot_values
 
 
 if __name__ == "__main__":
+    fig_path = "figures"
     num_iterations = 100
     prior_value = 4.0
     delta_time = 0.1
@@ -24,21 +25,18 @@ if __name__ == "__main__":
     err = model.get_error(uuid)
 
     for itr in range(num_iterations):
-    
         if itr in stim_range:
             intero_data.update(stim_delta)
-        
-
 
         intero_data.update(intero_data.value + delta_time * action.value)
         action.update(-err.value)
 
         model.update(skip_action=True)
         free_energy.update(model.get_free_energy())
-    
+
     plot_values(
         [intero_data, intero_mu, action, free_energy],
         ["Intero Data", "Intero Mu", "Action", "Free Energy"],
         lines=stim_range,
-        fig_path="figures/figure_01b.png"
+        fig_path=f"{fig_path}/figure_1.png",
     )
