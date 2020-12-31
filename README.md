@@ -2,6 +2,8 @@
 
 ![status](https://img.shields.io/badge/status-development-orange)
 
+> The order in which we update action has a significant effect on the oscillatory dynamics. 
+
 ## Figures
 
 ### Figure 1

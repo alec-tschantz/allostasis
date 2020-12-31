@@ -12,15 +12,21 @@ class Edge(object):
         err: Error,
         func: Optional[Function] = None,
         action: Optional[Action] = None,
+        action_threshold: Optional[float] = None,
     ):
         self.from_var = from_var
         self.to_var = to_var
         self.err = err
         self.func = func
         self.action = action
+        self.action_threshold = action_threshold
 
     def reset(self):
         self.from_var.reset()
+        if not isinstance(self.to_var, Data):
+            self.to_var.reset()
+        if self.action is not None:
+            self.action.reset()
 
     def update_error(self):
         mu, data, func, err = self.from_var, self.to_var, self.func, self.err
@@ -42,6 +48,8 @@ class Edge(object):
     def update_action(self):
         if self.action is not None:
             delta = -self.err.value / self.err.variance
+            if self.action_threshold is not None and self.err.value < self.action_threshold:
+                delta = 0
             self.action.append_delta(delta)
 
     def update_param(self):
@@ -50,17 +58,13 @@ class Edge(object):
             self.func.param.append_delta(delta)
 
     def apply_updates(self):
-        self.from_var.apply_update(stop_history=True)
+        self.from_var.apply_update()
         if not isinstance(self.to_var, Data):
-            self.to_var.apply_update(stop_history=True)
-        if self.action is not None:
-            self.action.apply_update()
+            self.to_var.apply_update()
         if self.func is not None:
             self.func.param.apply_update()
-
-        self.from_var.add_history()
-        if not isinstance(self.to_var, Data):
-            self.to_var.add_history()
+        if self.action is not None:
+            self.action.apply_update()
 
 
 class Model(object):
@@ -73,15 +77,16 @@ class Model(object):
         to_var: Union[Node, Data],
         func: Optional[Function] = None,
         action: Optional[Action] = None,
+        action_threshold: Optional[float] = None,
         variance: float = 1.0,
     ) -> str:
         err = Error(variance=variance)
-        edge = Edge(from_var, to_var, err, func, action)
+        edge = Edge(from_var, to_var, err, func, action, action_threshold)
         uuid = self.get_uuid()
         self.edges[uuid] = edge
         return uuid
 
-    def update(self, skip_action=False):
+    def update(self):
         for _, edge in self.edges.items():
             edge.reset()
             edge.update_error()
@@ -89,8 +94,7 @@ class Model(object):
         for _, edge in self.edges.items():
             edge.update_likelihood()
             edge.update_prior()
-            if not skip_action:
-                edge.update_action()
+            edge.update_action()
             edge.update_param()
 
         for _, edge in self.edges.items():
@@ -109,4 +113,3 @@ class Model(object):
     @staticmethod
     def get_uuid():
         return str(uuid.uuid4())
-
