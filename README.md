@@ -2,15 +2,13 @@
 
 ![status](https://img.shields.io/badge/status-development-orange)
 
-> The order in which we update action has a significant effect on the oscillatory dynamics. 
-
 ## Figures
 
 ### Figure 1
 Figure 1 presents a model of autonomic responses. Here, interoceptive prediction errors are minimized by autonomic reflexes.
 
 ### Figure 2
-Figure 2 presents a model of anticipatory responses. Here, an exteroceptive cue signals an imminent change in interoceptive variables. The exterocepive modality acts as a prior probability of interocepive variables, leading to anticipatory responses. Crucially, a non-linear relationship between metabolic cost and autonomic responses means that anticipatory regulation induces benefits in overall metabolic cost. 
+Figure 2 presents a model of anticipatory responses. Here, an exteroceptive cue signals an imminent change in interoceptive variables. The exterocepive modality acts as a prior probability of interoceptive variables, leading to anticipatory responses. Crucially, a non-linear relationship between metabolic cost and autonomic responses means that anticipatory regulation induces benefits in overall metabolic cost. 
 
 ### Figure 3
 Here, goal-directed behaviors are engaged to minimize interoceptive prediction errors. 

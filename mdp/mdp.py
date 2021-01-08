@@ -1,25 +1,14 @@
-from typing import List, Tuple
-
 import numpy as np
 
 
 class MDP(object):
-    def __init__(
-        self,
-        A_extero: np.ndarray,
-        A_intero: np.ndarray,
-        B: np.ndarray,
-        C: np.ndarray,
-        policies,
-        restrictive_policies=False,
-    ):
+    def __init__(self, A_extero, A_intero, B, C, policies):
         self.A_extero = A_extero
         self.A_intero = A_intero
         self.B = B
         self.C = C
         self.policies = policies
         self.p0 = np.exp(-16)
-        self.restrictive_policies = restrictive_policies
 
         self.num_extero_obs = self.A_extero.shape[0]
         self.num_intero_obs = self.A_intero.shape[0]
@@ -47,23 +36,18 @@ class MDP(object):
         self.uQ = np.zeros([self.num_control, 1])
         self.G = np.zeros([self.num_control, 1])
 
-        self.extero_obs = 0.0
+        self.extero_obs = 0
         self.intero_obs = 0
         self.action = None
         self.global_time = 0
 
-    def reset(self, extero_obs: int, intero_obs: int):
-        self.extero_obs = extero_obs
-        self.intero_obs = intero_obs
-        ll_extero = self.log_A_extero[self.extero_obs, :]
-        ll_extero = ll_extero[:, np.newaxis]
-        ll_intero = self.log_A_intero[self.intero_obs, :]
-        ll_intero = ll_intero[:, np.newaxis]
-        self.sQ = self.softmax(ll_extero + ll_intero)
-        # already taken first step
+    def reset(self):
+        self.extero_obs = 0
+        self.intero_obs = 0
+        self.action = None
         self.global_time = 0
 
-    def step(self, extero_obs: int, intero_obs: int, ret_exp_obs=False):
+    def step(self, extero_obs, intero_obs):
         self.extero_obs = extero_obs
         self.intero_obs = intero_obs
         self.infer_sQ()
@@ -72,10 +56,7 @@ class MDP(object):
         self.action = self.get_action()
         self.global_time = self.global_time + 1
         self.update_policies()
-        if ret_exp_obs:
-            return self.action, obs, kl
-        else:
-            return self.action
+        return self.action, obs, kl 
 
     def infer_sQ(self):
         ll_extero = self.log_A_extero[self.extero_obs, :]
@@ -104,16 +85,15 @@ class MDP(object):
             fos.append(fo)
             for t in range(1, len(policy)):
                 fs, fo, utility = self.counterfactual(policy[t], fs)
-                # TODO: epistemic
                 self.G[i] -= utility
                 kl.append(utility)
                 fos.append(fo)
             kls.append(kl)
             obs.append(fos)
-        
+
         return obs, kls
 
-    def counterfactual(self, action: int, state: np.ndarray):
+    def counterfactual(self, action, state):
         fs = np.dot(self.B[action], state)
         fo_extero = np.dot(self.A_extero, fs)
         fo_extero = self.normdist(fo_extero + self.p0)
@@ -121,7 +101,6 @@ class MDP(object):
         fo_intero = np.dot(self.A_intero, fs)
         fo_intero = self.normdist(fo_intero + self.p0)
 
-        # TODO: beliefs in intero or extero
         utility = np.sum(fo_intero * np.log(fo_intero / self.C), axis=0)
         utility = utility[0]
         return fs, fo_intero, utility
@@ -130,9 +109,7 @@ class MDP(object):
         self.uQ = self.softmax(self.G)
 
     def get_action(self) -> int:
-        # TODO: average over actions
         hu = max(self.uQ)
-        print(self.uQ)
         options = np.where(self.uQ == hu)[0]
         policy = int(np.random.choice(options))
         action = self.policies[policy][0]
@@ -141,7 +118,7 @@ class MDP(object):
     def update_policies(self):
         policies = []
         for policy in self.policies:
-            if policy[0] == self.action or (not self.restrictive_policies):
+            if policy[0] == self.action:
                 policies.append(policy[1:])
         self.policies = policies
 
@@ -155,4 +132,3 @@ class MDP(object):
     @staticmethod
     def normdist(x: np.ndarray) -> np.ndarray:
         return np.dot(x, np.diag(1 / np.sum(x, 0)))
-
