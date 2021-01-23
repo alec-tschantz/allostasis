@@ -16,6 +16,10 @@ class Variable(object):
         if self.store_history and not skip_history:
             self._history.append(self._value)
 
+    def hard_reset(self):
+        self._history = []
+        self._value = 0.0
+
     @property
     def value(self) -> float:
         return self._value
@@ -43,9 +47,11 @@ class Node(Variable):
         self._added_history = False
         self._deltas: List[float] = []
 
-    def reset(self):
+    def reset(self, hard=False):
         self._added_history = False
         self._deltas = []
+        if hard:
+            self.hard_reset()
 
     def append_delta(self, delta: float):
         self._deltas.append(delta)

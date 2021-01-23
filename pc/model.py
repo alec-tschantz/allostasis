@@ -21,10 +21,10 @@ class Edge(object):
         self.action = action
         self.action_threshold = action_threshold
 
-    def reset(self):
-        self.from_var.reset()
+    def reset(self, hard=False):
+        self.from_var.reset(hard)
         if not isinstance(self.to_var, Data):
-            self.to_var.reset()
+            self.to_var.reset(hard)
         if self.action is not None:
             self.action.reset()
 
@@ -85,6 +85,11 @@ class Model(object):
         uuid = self.get_uuid()
         self.edges[uuid] = edge
         return uuid
+
+    def reset(self):
+        for _, edge in self.edges.items():
+            edge.reset(hard=True)
+            edge.update_error()
 
     def update(self):
         for _, edge in self.edges.items():
