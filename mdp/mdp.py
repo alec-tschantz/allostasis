@@ -57,9 +57,12 @@ class MDP(object):
         # make range a param
         _map = np.linspace(0, 2.0, self.num_intero_obs)
         value = _map[intero_obs]
+        self.prior.update(value)
         # perhaps some transform w/ weights
-        value = value + np.random.normal(0, self.noise)
-        return value
+        mu = self.prior
+        data = mu
+        data = data.value + np.random.normal(0, self.noise)
+        return data
 
     def infer_intero_obs(self, data):
         bins = np.linspace(0, 2.0, self.num_intero_obs)
