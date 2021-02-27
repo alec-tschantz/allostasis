@@ -113,7 +113,7 @@ def predict_obs(arr):
     for a in arr:
         n_new_arr = []
         for b in a:
-            val = _map[np.argmax(b)]
+            val = _map[np.argmax(b)] + np.random.normal(0, 0.1)
             n_new_arr.append(val)
         new_arr.append(n_new_arr)
     return new_arr
@@ -203,7 +203,7 @@ if __name__ == "__main__":
     state = RUNNING_NO_WATER_STATE[0]
     extero_obs, intero_obs, n = get_obs(state, 0, n)
 
-    action, obs, extero_obs_model, kl = mdp.step(extero_obs, intero_obs)
+    action, obs, extero_obs_model, mapped_obs, kl = mdp.step(extero_obs, intero_obs)
     state = update_state(state, action)
     extero_obs, intero_obs, n = get_obs(state, 0, n)
     print(f"{0} extero obs {extero_obs} intero obs {intero_obs} action {action}")
@@ -211,14 +211,13 @@ if __name__ == "__main__":
     # simulation
     for t in range(1, RUNNING_LEN - 1):
         if t == RUNNING_LEN // 2:
-            action, obs_2, extero_obs_model_2, kl_2 = mdp.step(extero_obs, intero_obs)
+            action, obs_2, extero_obs_model_2, mapped_obs_2, kl_2 = mdp.step(extero_obs, intero_obs)
         else:
-            action, _, _, _ = mdp.step(extero_obs, intero_obs)
+            action, _, _, _, _ = mdp.step(extero_obs, intero_obs)
         state = update_state(state, action)
         extero_obs, intero_obs, n = get_obs(state, t, n)
         running_state, water_state = get_water_running(mdp.sQ)
-        print(f"{t} extero obs {extero_obs} intero obs {intero_obs} action {action}")
-        print(f"{t} running_state {running_state.round()} water_state {water_state.round()} ")
+    
 
     running_obs = [[], []]
     water_obs = [[], []]
@@ -229,72 +228,70 @@ if __name__ == "__main__":
             water_obs[i].append(np.argmax(water_state))
 
     obs = predict_obs(obs)
-    # plot beliefs
-    fig, ax = plt.subplots(2, 2)
-    ax[0, 0].plot(kl[0], marker="x", color="r")
-    ax[0, 0].set_title("KL divergence (run with water)")
-    ax[0, 0].set_ylabel("KL divergence")
-    ax[0, 0].set_xlabel("Future time")
+    # obs = mapped_obs
 
-    ax[0, 1].plot(obs[0], marker="x", color="r")
+    # plot beliefs
+    fig, ax = plt.subplots(2, 4, figsize=(12, 5))
+    ax[0, 0].plot(np.ones_like(water_obs[0]), marker="x", color="r")
+    ax[0, 0].set_title("Carrying water")
+    # ax[0, 1].set_ylabel("Predicted thirst")
+    ax[0, 0].set_xlabel("Future time")
+    ax[0, 0].set_ylim(-0.1, 1.1)
+    plt.sca(ax[0, 0])
+    plt.yticks([0, 1], ["No water", "Water"])
+
+    ax[0, 1].plot(running_obs[0], marker="x", color="g")
+    ax[0, 1].set_title("Time running")
+    ax[0, 1].set_ylabel("Time running")
+    ax[0, 1].set_xlabel("Future time")
+    # ax[0, 1].set_ylim(0, 2)
+
+    ax[0, 2].plot(obs[0], marker="x", color="orange")
     # ax[0, 1].plot(running_obs[0], marker="x", color="g")
     #   ax[0, 1].plot(water_obs[0], marker="x", color="b")
-    ax[0, 1].set_title("Predicted thirst (run with water)")
-    ax[0, 1].set_ylabel("Predicted thirst")
-    ax[0, 1].set_xlabel("Future time")
-    ax[0, 1].set_ylim(0, 2)
-    ax[0, 0].set_ylim(0, 3)
+    ax[0, 2].set_title("Predicted temprature")
+    ax[0, 2].set_ylabel("Predicted temprature")
+    ax[0, 2].set_xlabel("Future time")
+    ax[0, 2].set_ylim(-0.3, 1.5)
 
-    ax[1, 0].plot(kl[1], marker="x")
-    ax[1, 0].set_title("KL divergence (run without water)")
+    ax[0, 3].plot(kl[0], marker="x", color="r")
+    ax[0, 3].set_title("KL divergence")
+    ax[0, 3].set_ylabel("KL divergence")
+    ax[0, 3].set_xlabel("Future time")
+    ax[0, 3].set_ylim(0, 2.5)
+
+    ax[1, 0].plot(water_obs[1], marker="x", color="r")
+    ax[1, 0].set_title("Carrying water")
+    # ax[0, 1].set_ylabel("Predicted thirst")
     ax[1, 0].set_xlabel("Future time")
-    ax[1, 0].set_ylabel("KL divergence")
+    # ax[0, 1].set_ylim(0, 2)
+    ax[1, 0].set_ylim(-0.1, 1.1)
+    plt.sca(ax[1, 0])
+    plt.yticks([0, 1], ["No Water", "Water"])
 
-    ax[1, 1].plot(obs[1], marker="x", color="r")
-    #  ax[1, 1].plot(running_obs[1], marker="x", color="g")
-    #   ax[1, 1].plot(water_obs[1], marker="x", color="b")
-    ax[1, 1].set_title("Predicted thirst (run without water)")
-    ax[1, 1].set_ylabel("Predicted thirst")
+    ax[1, 1].plot(running_obs[1], marker="x", color="g")
+    ax[1, 1].set_title("Time running")
+    ax[1, 1].set_ylabel("Time running")
     ax[1, 1].set_xlabel("Future time")
+    # ax[0, 1].set_ylim(0, 2)
 
-    ax[1, 0].set_ylim(0, 3)
-    ax[1, 1].set_ylim(0, 2)
-
-    plt.tight_layout()
-    plt.savefig("figures/figure_5.png")
-
-    obs_2 = predict_obs(obs_2)
-    # plot beliefs
-    fig, ax = plt.subplots(2, 2)
-    ax[0, 0].plot(kl_2[0], marker="x", color="r")
-    ax[0, 0].set_title("KL divergence (run with water)")
-    ax[0, 0].set_ylabel("KL divergence")
-    ax[0, 0].set_xlabel("Future time")
-
-    ax[0, 1].plot(obs_2[0], marker="x", color="r")
+    ax[1, 2].plot(obs[1], marker="x", color="orange")
     # ax[0, 1].plot(running_obs[0], marker="x", color="g")
     #   ax[0, 1].plot(water_obs[0], marker="x", color="b")
-    ax[0, 1].set_title("Predicted thirst (run with water)")
-    ax[0, 1].set_ylabel("Predicted thirst")
-    ax[0, 1].set_xlabel("Future time")
-    ax[0, 1].set_ylim(0, 2)
-    ax[0, 0].set_ylim(0, 3)
+    ax[1, 2].set_title("Predicted temprature")
+    ax[1, 2].set_ylabel("Predicted temprature")
+    ax[1, 2].set_xlabel("Future time")
+    ax[1, 2].set_ylim(-0.3, 1.5)
 
-    ax[1, 0].plot(kl_2[1], marker="x")
-    ax[1, 0].set_title("KL divergence (run without water)")
-    ax[1, 0].set_xlabel("Future time")
-    ax[1, 0].set_ylabel("KL divergence")
+    ax[1, 3].plot(kl[1], marker="x", color="r")
+    ax[1, 3].set_title("KL divergence")
+    ax[1, 3].set_ylabel("KL divergence")
+    ax[1, 3].set_xlabel("Future time")
+    ax[1, 3].set_ylim(0, 2.5)
 
-    ax[1, 1].plot(obs_2[1], marker="x", color="r")
-    #  ax[1, 1].plot(running_obs[1], marker="x", color="g")
-    #   ax[1, 1].plot(water_obs[1], marker="x", color="b")
-    ax[1, 1].set_title("Predicted thirst (run without water)")
-    ax[1, 1].set_ylabel("Predicted thirst")
-    ax[1, 1].set_xlabel("Future time")
-
-    ax[1, 0].set_ylim(0, 3)
-    ax[1, 1].set_ylim(0, 2)
+    for a in ax.flatten():
+        [spine.set_linewidth(1.3) for spine in a.spines.values()]
 
     plt.tight_layout()
-    plt.savefig("figures/figure_6.png")
+    plt.savefig("figures/figure_6.png", dpi=300)
 

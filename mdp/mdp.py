@@ -53,10 +53,10 @@ class MDP(object):
         self.prior_err = self.model.add_connection(self.prior, self.intero_mu)
         self.ll_err = self.model.add_connection(self.intero_mu, self.intero_data)
 
-    def predict_intero_obs(self):
+    def predict_intero_obs(self, intero_obs):
         # make range a param
         _map = np.linspace(0, 2.0, self.num_intero_obs)
-        value = _map[self.intero_obs]
+        value = _map[intero_obs]
         # perhaps some transform w/ weights
         value = value + np.random.normal(0, self.noise)
         return value
@@ -86,12 +86,12 @@ class MDP(object):
         #self.intero_obs = intero_obs
         self.intero_obs = self.infer_intero_obs(intero_obs)[0]
         self.infer_sQ()
-        obs, extero_obs, kl = self.evaluate_G()
+        obs, extero_obs, mapped_obs, kl = self.evaluate_G()
         self.infer_uQ()
         self.action = self.get_action()
         self.global_time = self.global_time + 1
         self.update_policies()
-        return self.action, obs, extero_obs, kl
+        return self.action, obs, extero_obs, mapped_obs, kl
 
     def infer_sQ(self):
         ll_extero = self.log_A_extero[self.extero_obs, :]
@@ -109,6 +109,7 @@ class MDP(object):
         num_policies = len(self.policies)
         self.G = np.zeros([num_policies, 1])
         obs = []
+        mapped_obs = []
         extero_obs = []
         kls = []
 
@@ -116,23 +117,27 @@ class MDP(object):
             fos = []
             kl = []
             extero_ob = []
+            mapped_ob = []
 
-            fs, fo, extero_fo, utility = self.counterfactual(policy[0], self.sQ)
+            fs, fo, extero_fo, max_fo_intero_mapped, utility = self.counterfactual(policy[0], self.sQ)
             self.G[i] -= utility
             kl.append(utility)
             fos.append(fo)
             extero_ob.append(extero_fo)
+            mapped_ob.append(max_fo_intero_mapped)
             for t in range(1, len(policy)):
-                fs, fo, fo_extero, utility = self.counterfactual(policy[t], fs)
+                fs, fo, fo_extero, max_fo_intero_mapped, utility = self.counterfactual(policy[t], fs)
                 self.G[i] -= utility
                 kl.append(utility)
                 fos.append(fo)
                 extero_ob.append(fo_extero)
+                mapped_ob.append(max_fo_intero_mapped)
             kls.append(kl)
             obs.append(fos)
             extero_obs.append(extero_ob)
+            mapped_obs.append(mapped_ob)
 
-        return obs, extero_obs, kls
+        return obs, extero_obs, mapped_obs, kls
 
     def counterfactual(self, action, state):
         fs = np.dot(self.B[action], state)
@@ -141,10 +146,15 @@ class MDP(object):
 
         fo_intero = np.dot(self.A_intero, fs)
         fo_intero = self.normdist(fo_intero + self.p0)
-
+        # Do BMA here
+        max_fo_intero = np.argmax(fo_intero)
+        max_fo_intero_mapped = self.predict_intero_obs(max_fo_intero)
+        
         utility = np.sum(fo_intero * np.log(fo_intero / self.C), axis=0)
         utility = utility[0]
-        return fs, fo_intero, fo_extero, utility
+        # No epistemic as we have no uncertainty
+
+        return fs, fo_intero, fo_extero, max_fo_intero_mapped, utility
 
     def infer_uQ(self):
         self.uQ = self.softmax(self.G)
